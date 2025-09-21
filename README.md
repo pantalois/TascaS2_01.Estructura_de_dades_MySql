@@ -32,8 +32,8 @@ git clone https://github.com/pantalois/TascaS2_01.Estructura_de_dades_MySql.git
 # 2. Navigate to the repository
 cd TascaS2_01.Estructura_de_dades_MySql
 ```
-# 3. Open your MySQL client
+**3. Open your MySQL client**
 
-# 4. Import the .sql scripts
+**4. Import the .sql scripts**
 
-# 5. Go to Database → Reverse Engineer to create the EER diagram
+**5. Go to Database → Reverse Engineer to create the EER diagram**
