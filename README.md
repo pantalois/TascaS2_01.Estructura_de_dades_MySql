@@ -27,10 +27,11 @@ It also manages stores, employees, and delivery assignments.
 ```bash
 # 1. Clone the repository
 git clone https://github.com/pantalois/TascaS2_01.Estructura_de_dades_MySql.git
-
+```
+```bash
 # 2. Navigate to the repository
 cd TascaS2_01.Estructura_de_dades_MySql
-
+```
 # 3. Open your MySQL client
 
 # 4. Import the .sql scripts
