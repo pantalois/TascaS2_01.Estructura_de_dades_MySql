@@ -1,194 +1,141 @@
--- MySQL Workbench Forward Engineering
+CREATE SCHEMA IF NOT EXISTS pizzeria DEFAULT CHARACTER SET utf8mb4;
+USE pizzeria;
 
-SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+-- Pueblos / ciudades
+CREATE TABLE town (
+  id_town INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(45),
+  county VARCHAR(45)
+) ENGINE=InnoDB;
 
--- -----------------------------------------------------
--- Schema pizzeria
--- -----------------------------------------------------
+-- Clientes
+CREATE TABLE client (
+  id_client INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(45),
+  surname VARCHAR(45),
+  address VARCHAR(45),
+  postal_code VARCHAR(45),
+  phone VARCHAR(45),
+  email VARCHAR(45),
+  town_id_town INT NOT NULL,
+  INDEX fk_client_town1_idx (town_id_town),
+  CONSTRAINT fk_client_town1
+    FOREIGN KEY (town_id_town)
+    REFERENCES town (id_town)
+) ENGINE=InnoDB;
 
--- -----------------------------------------------------
--- Schema pizzeria
--- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `pizzeria` DEFAULT CHARACTER SET utf8 ;
-USE `pizzeria` ;
+-- Tiendas / locales físicos
+CREATE TABLE store (
+  id_store INT AUTO_INCREMENT PRIMARY KEY,
+  address_id_address INT NOT NULL,
+  town_id_town INT NOT NULL,
+  INDEX fk_store_town1_idx (town_id_town),
+  CONSTRAINT fk_store_town1
+    FOREIGN KEY (town_id_town)
+    REFERENCES town (id_town)
+) ENGINE=InnoDB;
 
--- -----------------------------------------------------
--- Table `pizzeria`.`county`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `pizzeria`.`county` (
-  `id_county` INT NOT NULL,
-  `name` VARCHAR(45) NULL,
-  PRIMARY KEY (`id_county`))
-ENGINE = InnoDB;
+-- Trabajadores (cocinero / repartidor)
+CREATE TABLE worker (
+  id_worker INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(45),
+  surname VARCHAR(45),
+  nif VARCHAR(45),
+  phone VARCHAR(45),
+  cook_or_delivery ENUM('cook', 'delivery'),
+  store_id_store INT NOT NULL,
+  INDEX fk_worker_store1_idx (store_id_store),
+  CONSTRAINT fk_worker_store1
+    FOREIGN KEY (store_id_store)
+    REFERENCES store (id_store)
+) ENGINE=InnoDB;
 
+-- Direcciones (ojo: en tu modelo esto apunta tanto a client como a store con IDs,
+-- pero NO tienes foreign keys aquí, así que lo dejo tal cual)
+CREATE TABLE address (
+  Id_address INT AUTO_INCREMENT PRIMARY KEY,
+  street VARCHAR(45) NOT NULL,
+  number VARCHAR(45) NOT NULL,
+  apartment VARCHAR(45),
+  door VARCHAR(45),
+  city VARCHAR(45) NOT NULL,
+  postal_code VARCHAR(45) NOT NULL,
+  country VARCHAR(45) NOT NULL,
+  client_id_client INT NOT NULL,
+  store_id_store INT NOT NULL
+) ENGINE=InnoDB;
 
--- -----------------------------------------------------
--- Table `pizzeria`.`town`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `pizzeria`.`town` (
-  `id_town` INT NOT NULL,
-  `name` VARCHAR(45) NULL,
-  `county_id_county` INT NOT NULL,
-  PRIMARY KEY (`id_town`),
-  INDEX `fk_town_county1_idx` (`county_id_county` ASC) VISIBLE,
-  CONSTRAINT `fk_town_county1`
-    FOREIGN KEY (`county_id_county`)
-    REFERENCES `pizzeria`.`county` (`id_county`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
+-- Productos vendibles
+CREATE TABLE product (
+  id_product INT AUTO_INCREMENT PRIMARY KEY,
+  name ENUM('pizza', 'burguer', 'drink'),
+  description VARCHAR(45),
+  image BLOB,
+  price INT
+) ENGINE=InnoDB;
 
+-- Categorías (vegana, picante, sin gluten, etc.)
+CREATE TABLE category (
+  id_category INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(45)
+) ENGINE=InnoDB;
 
--- -----------------------------------------------------
--- Table `pizzeria`.`client`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `pizzeria`.`client` (
-  `id_client` INT NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(45) NULL,
-  `surname` VARCHAR(45) NULL,
-  `address` VARCHAR(45) NULL,
-  `postal_code` VARCHAR(45) NULL,
-  `phone` VARCHAR(45) NULL,
-  `email` VARCHAR(45) NULL,
-  `town_id_town` INT NOT NULL,
-  PRIMARY KEY (`id_client`),
-  INDEX `fk_client_town1_idx` (`town_id_town` ASC) VISIBLE,
-  CONSTRAINT `fk_client_town1`
-    FOREIGN KEY (`town_id_town`)
-    REFERENCES `pizzeria`.`town` (`id_town`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
+-- Relación producto <-> categoría (muchos a muchos)
+CREATE TABLE pizza_category (
+  id_pizza_category INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(45) NOT NULL,
+  product_id_product INT NOT NULL,
+  category_id_category INT NOT NULL,
+  INDEX fk_pizza_category_product1_idx (product_id_product),
+  INDEX fk_pizza_category_category1_idx (category_id_category),
+  CONSTRAINT fk_pizza_category_product1
+    FOREIGN KEY (product_id_product)
+    REFERENCES product (id_product),
+  CONSTRAINT fk_pizza_category_category1
+    FOREIGN KEY (category_id_category)
+    REFERENCES category (id_category)
+) ENGINE=InnoDB;
 
+-- Pedido
+CREATE TABLE request (
+  id_request INT AUTO_INCREMENT PRIMARY KEY,
+  takeaway_or_pickup ENUM('takeaway', 'pickup'),
+  total_amount INT,
+  price DECIMAL(8,2),
+  delivery_date_hour DATETIME,
+  client_id_client INT NOT NULL,
+  worker_id_worker INT NOT NULL,
+  store_id_store INT NOT NULL,
+  INDEX fk_order_client1_idx (client_id_client),
+  INDEX fk_order_worker1_idx (worker_id_worker),
+  INDEX fk_order_store1_idx (store_id_store),
+  CONSTRAINT fk_order_client1
+    FOREIGN KEY (client_id_client)
+    REFERENCES client (id_client),
+  CONSTRAINT fk_order_worker1
+    FOREIGN KEY (worker_id_worker)
+    REFERENCES worker (id_worker),
+  CONSTRAINT fk_order_store1
+    FOREIGN KEY (store_id_store)
+    REFERENCES store (id_store)
+) ENGINE=InnoDB;
 
--- -----------------------------------------------------
--- Table `pizzeria`.`store`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `pizzeria`.`store` (
-  `id_store` INT NOT NULL,
-  `address_id_address` INT NOT NULL,
-  `town_id_town` INT NOT NULL,
-  PRIMARY KEY (`id_store`),
-  INDEX `fk_store_town1_idx` (`town_id_town` ASC) VISIBLE,
-  CONSTRAINT `fk_store_town1`
-    FOREIGN KEY (`town_id_town`)
-    REFERENCES `pizzeria`.`town` (`id_town`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `pizzeria`.`worker`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `pizzeria`.`worker` (
-  `id_worker` INT NOT NULL,
-  `name` VARCHAR(45) NULL,
-  `surname` VARCHAR(45) NULL,
-  `nif` VARCHAR(45) NULL,
-  `phone` VARCHAR(45) NULL,
-  `cook_or_delivery` TINYINT NULL,
-  `delivery_date_hour` DATETIME NULL,
-  `store_id_store` INT NOT NULL,
-  PRIMARY KEY (`id_worker`),
-  INDEX `fk_worker_store1_idx` (`store_id_store` ASC) VISIBLE,
-  CONSTRAINT `fk_worker_store1`
-    FOREIGN KEY (`store_id_store`)
-    REFERENCES `pizzeria`.`store` (`id_store`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `pizzeria`.`order`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `pizzeria`.`order` (
-  `id_order` INT NOT NULL AUTO_INCREMENT,
-  `takeaway_or_pickup` TINYINT NULL,
-  `total_amount` INT NULL,
-  `price` DECIMAL(8,2) NULL,
-  `client_id_client` INT NOT NULL,
-  `worker_id_worker` INT NOT NULL,
-  `store_id_store` INT NOT NULL,
-  PRIMARY KEY (`id_order`),
-  INDEX `fk_order_client1_idx` (`client_id_client` ASC) VISIBLE,
-  INDEX `fk_order_worker1_idx` (`worker_id_worker` ASC) VISIBLE,
-  INDEX `fk_order_store1_idx` (`store_id_store` ASC) VISIBLE,
-  CONSTRAINT `fk_order_client1`
-    FOREIGN KEY (`client_id_client`)
-    REFERENCES `pizzeria`.`client` (`id_client`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_order_worker1`
-    FOREIGN KEY (`worker_id_worker`)
-    REFERENCES `pizzeria`.`worker` (`id_worker`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_order_store1`
-    FOREIGN KEY (`store_id_store`)
-    REFERENCES `pizzeria`.`store` (`id_store`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `pizzeria`.`category`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `pizzeria`.`category` (
-  `id_category` INT NOT NULL,
-  `name` VARCHAR(45) NULL,
-  PRIMARY KEY (`id_category`))
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `pizzeria`.`product`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `pizzeria`.`product` (
-  `id_product` INT NOT NULL AUTO_INCREMENT,
-  `name` ENUM('pizza', 'burguer', 'drink') NULL,
-  `description` VARCHAR(45) NULL,
-  `image` BLOB NULL,
-  `price` INT NULL,
-  `order_id_order` INT NOT NULL,
-  PRIMARY KEY (`id_product`),
-  INDEX `fk_product_order1_idx` (`order_id_order` ASC) VISIBLE,
-  CONSTRAINT `fk_product_order1`
-    FOREIGN KEY (`order_id_order`)
-    REFERENCES `pizzeria`.`order` (`id_order`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `pizzeria`.`pizza_category`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `pizzeria`.`pizza_category` (
-  `id_pizza_category` INT NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(45) NOT NULL,
-  `product_id_product` INT NOT NULL,
-  `category_id_category` INT NOT NULL,
-  PRIMARY KEY (`id_pizza_category`),
-  INDEX `fk_pizza_category_product1_idx` (`product_id_product` ASC) VISIBLE,
-  INDEX `fk_pizza_category_category1_idx` (`category_id_category` ASC) VISIBLE,
-  CONSTRAINT `fk_pizza_category_product1`
-    FOREIGN KEY (`product_id_product`)
-    REFERENCES `pizzeria`.`product` (`id_product`)
+-- Detalle del pedido (líneas de pedido: qué producto, cuántas unidades)
+CREATE TABLE request_detail (
+  id_request_detail INT AUTO_INCREMENT PRIMARY KEY,
+  quantity INT,
+  product_id_product INT NOT NULL,
+  request_id_request INT NOT NULL,
+  INDEX fk_request_detail_product1_idx (product_id_product),
+  INDEX fk_request_detail_request1_idx (request_id_request),
+  CONSTRAINT fk_request_detail_product1
+    FOREIGN KEY (product_id_product)
+    REFERENCES product (id_product)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_pizza_category_category1`
-    FOREIGN KEY (`category_id_category`)
-    REFERENCES `pizzeria`.`category` (`id_category`)
+  CONSTRAINT fk_request_detail_request1
+    FOREIGN KEY (request_id_request)
+    REFERENCES request (id_request)
     ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
-
-SET SQL_MODE=@OLD_SQL_MODE;
-SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+    ON UPDATE NO ACTION
+) ENGINE=InnoDB;
